@@ -1,6 +1,17 @@
 Change Log for GHG Monitoring Tower Program
 ===========================================
 
+20111121_LIND
+-------------
+
+This is the first release deployed at the Lind, WA site.
+
+### Site-specific Changes 
+
+* Update net radiometer sensitivity value
+* Update PAR sensor sensitivity value
+
+
 20111101_CFNT
 -------------
 

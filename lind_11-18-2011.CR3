@@ -546,7 +546,7 @@ Units Rn_meas = W/^2
 
 #If ( SENSOR_NR_LITE = TRUE ) Then
 '*** Beginning of NR Lite constants and variables ***
-Const NRLITE_CAL = 1000/13.3                 'Unique multiplier for NR Lite (1000/sensitivity).
+Const NRLITE_CAL = 1000/12.6                'Unique multiplier for NR Lite (1000/sensitivity).
 Const NMBR_WND_SAMPLES = 3000/SCAN_INTERVAL 'Number of points to compute a three second mean horizontal wind.
 Public nr(2)
 Dim hor_wind
@@ -711,7 +711,7 @@ Units shf_cal = W/(m^2 mV)
 #EndIf
 
 '*** Beginning of LI190SB constants and variables ***
-Const par_cal = 6.26				'Unique calibration vlaue for LI190SB in uA/mmol/s/m^2
+Const par_cal = 6.84				'Unique calibration vlaue for LI190SB in uA/mmol/s/m^2
 Const par_mult_flxdens = 1000/(par_cal*0.604)	'multiplier for Flux Density_1 calculation
 Const par_mult_totflx = (1/(par_cal*0.604))*(SCAN_INTERVAL/1000)	'multiplier for Total Fluxes_1 calculation
 Public par(3)
