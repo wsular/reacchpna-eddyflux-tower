@@ -17,6 +17,8 @@
 ' - add azimiuth for cup & vane 
 '
 'Version history
+' 20120309 [pto]
+'   - (!) fixed bug where 5 min stats were used for both 5/30min derived HMP values (e/esat/RH)
 ' 20120215 [pto]
 '   - std_wnd_dir reports 0 sometimes; completely unapparent why
 '     > WindVector ignores NANs for stddev and "for Option output 2" (CSI CRBASIC help)
@@ -1575,7 +1577,7 @@ BeginProg
         #EndIf
         CallTable work_stats2_hmp
         If ( work_stats2_hmp.Output(1,1) ) Then
-          GetRecord(T_hmp_mean,work_stats1_hmp,1)
+          GetRecord(T_hmp_mean,work_stats2_hmp,1)
           H2O_hmp_mean = e_hmp_mean/((T_hmp_mean+273.15)*RV)
           rho_d_mean_hmp = (amb_press_mean-e_hmp_mean)/((T_hmp_mean+273.15)*RD)
           rho_a_mean_hmp = (rho_d_mean_hmp+H2O_hmp_mean)/1000

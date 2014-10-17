@@ -1,6 +1,16 @@
 Change Log for GHG Monitoring Tower Program
 ===========================================
 
+20120309_CFNT
+-------------
+
+### Issues Fixed
+
+* Correct data table reference; before this fix, since 20120215_CFNT, values
+  from the T/RH probe recorded in 30-min data table were mistakenly duplicates
+  of most recent 5-min period values. 
+
+
 20120215_CFNT
 -------------
 
