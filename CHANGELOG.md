@@ -1,6 +1,22 @@
 Change Log for GHG Monitoring Tower Program
 ===========================================
 
+20120727_LIND
+-------------
+
+### Data Table Changes
+
+* Increase size of 'site_info' table 1 -> 20 to allow to unintended restarts
+
+### Other Changes
+
+* Update auxilary sensors to match site
+    * Deactivate Decagon 6-band radiometers    
+    * Deactivate Los Gatos N2O/CO
+    * Activate soil heat flux plate
+* Add duplicate statements to end soil heat flux calibration interval
+
+
 20120720_CFNT
 -------------
 
