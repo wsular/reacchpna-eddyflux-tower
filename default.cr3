@@ -70,7 +70,7 @@ Const DEC_PRI_DN_SDI_ADDR = 3
 
 ConstTable
   Const SHFP_ENABLED = False
-  Const NDVIPRI_ENABLED = False
+  Const DEC_SRS_ENABLED = True
   Const LGR_N2O_ENABLED = False
   Const PIC_CH4_ENABLED = False
 EndConstTable
@@ -487,17 +487,44 @@ Units pic_ch4 = scale-dependent
 Units pic_h2o = scale-dependent
 
 '**********  Decagon 2nd gen. sensors (UI) **********
-#If (NDVIPRI_ENABLED) Then
-  Public decagon(8) As Float
-  Alias decagon(1) = dec_ndvi_up1
-  Alias decagon(2) = dec_ndvi_up2
-  Alias decagon(3) = dec_ndvi_dn1
-  Alias decagon(4) = dec_ndvi_dn2
-  Alias decagon(5) = dec_pri_up1
-  Alias decagon(6) = dec_pri_up2
-  Alias decagon(7) = dec_pri_dn1
-  Alias decagon(8) = dec_pri_dn2
-  Units decagon = unknown
+Const DEF_ALPHA_NDVI = 0.98
+Const DEF_ALPHA_PRI = 1.86
+Dim aRn
+
+#If (DEC_SRS_ENABLED) Then
+  Public decagon(12) As Float
+  
+  Dim work_srs_out(12)
+  Alias work_srs_out(1)  = incident_650nm  'red
+  Alias work_srs_out(2)  = incident_810nm  'NIR
+  Alias work_srs_out(3)  = NDVI_up_tilt
+  Alias work_srs_out(4)  = reflected_650nm
+  Alias work_srs_out(5)  = reflected_810nm
+  Alias work_srs_out(6)  = NDVI_down_tilt
+  Alias work_srs_out(7)  = incident_531nm
+  Alias work_srs_out(8)  = incident_570nm
+  Alias work_srs_out(9)  = PRI_up_tilt
+  Alias work_srs_out(10)  = reflected_531nm
+  Alias work_srs_out(11) = reflected_570nm
+  Alias work_srs_out(12) = PRI_down_tilt
+  Units incident_650nm = W/m^2/nm
+  Units incident_810nm = W/m^2/nm
+  Units reflected_650nm = W/m^2/nm/sr
+  Units reflected_810nm = W/m^2/nm/sr
+  Units incident_531nm = W/m^2/nm
+  Units incident_570nm = W/m^2/nm
+  Units reflected_531nm = W/m^2/nm/sr
+  Units reflected_570nm = W/m^2/nm/sr
+
+  Public dec_out(4)
+  Alias dec_out(1) = NDVI
+  Alias dec_out(2) = PRI
+  Alias dec_out(3) = alpha_NDVI
+  Alias dec_out(4) = alpha_PRI
+  Units NDVI = ratio
+  Units PRI = ratio
+  Units alpha_NDVI = ratio
+  Units alpha_PRI = ratio
 #EndIf
 
 
@@ -862,10 +889,8 @@ EndTable
 'XXXX TODO how should this table be changed?
 DataTable(extra_info,True,10)
   CardOut(0,1000)
-  Sample(1,NDVIPRI_ENABLED,Boolean)
-    FieldNames("Decagon_NDVI_installed")
-  Sample(1,NDVIPRI_ENABLED,Boolean)
-    FieldNames("Decagon_PRI_installed")
+  Sample(1,DEC_SRS_ENABLED,Boolean)
+    FieldNames("Decagon_SRS_installed")
   Sample(1,LGR_N2O_ENABLED,Boolean)
     FieldNames("LGR_n2oco_installed")
   Sample(1,lgr_n2o_mult,IEEE4)
@@ -899,35 +924,29 @@ EndTable
   EndTable
 #EndIf
 
-#If (NDVIPRI_ENABLED) Then
-  DataTable(stats5_ui,True,-1)
-    DataInterval(0,STAT_OUT_5,min,10)
-    CardOut(0,-1) 
-    Average(1,dec_ndvi_up1,IEEE4,dec_ndvi_up1=NAN)
-    Average(1,dec_ndvi_up2,IEEE4,dec_ndvi_up2=NAN)
-    Average(1,dec_ndvi_dn1,IEEE4,dec_ndvi_dn1=NAN)
-    Average(1,dec_ndvi_dn2,IEEE4,dec_ndvi_dn2=NAN)
-    Average(1,dec_pri_up1,IEEE4,dec_pri_up1=NAN)
-    Average(1,dec_pri_up2,IEEE4,dec_pri_up2=NAN)
-    Average(1,dec_pri_dn1,IEEE4,dec_pri_dn1=NAN)
-    Average(1,dec_pri_dn2,IEEE4,dec_pri_dn2=NAN)
-    Totalize(1,n,UINT2,FALSE)
-      FieldNames("tblcalls_Tot")
+#If (DEC_SRS_ENABLED) Then
+  DataTable(work_srs,True,1)
+    TableHide
+    DataInterval(0,STAT_OUT_5,min,1)
+    Average(1,decagon(1),IEEE4,decagon(1)=NAN)
+    Average(1,decagon(2),IEEE4,decagon(2)=NAN)
+    Median (1,decagon(3),20,UINT2,decagon(3) > 2 OR decagon(3) < 0)
+    Average(1,decagon(4),IEEE4,decagon(4)=NAN)
+    Average(1,decagon(5),IEEE4,decagon(5)=NAN)
+    Median (1,decagon(6),20,UINT2,decagon(6) > 2 OR decagon(6) < 0)
+    Average(1,decagon(7),IEEE4,decagon(7)=NAN)
+    Average(1,decagon(8),IEEE4,decagon(8)=NAN)
+    Median (1,decagon(9),20,UINT2,decagon(9) > 2 OR decagon(9) < 0)
+    Average(1,decagon(10),IEEE4,decagon(10)=NAN)
+    Average(1,decagon(11),IEEE4,decagon(11)=NAN)
+    Median (1,decagon(12),20,UINT2,decagon(12) > 2 OR decagon(12) < 0)
   EndTable
-  
-  DataTable(stats30_ui,True,-1)
-    DataInterval(0,STAT_OUT_30,min,10)
-    CardOut(0,-1)
-    Average(1,dec_ndvi_up1,IEEE4,dec_ndvi_up1=NAN)
-    Average(1,dec_ndvi_up2,IEEE4,dec_ndvi_up2=NAN)
-    Average(1,dec_ndvi_dn1,IEEE4,dec_ndvi_dn1=NAN)
-    Average(1,dec_ndvi_dn2,IEEE4,dec_ndvi_dn2=NAN)
-    Average(1,dec_pri_up1,IEEE4,dec_pri_up1=NAN)
-    Average(1,dec_pri_up2,IEEE4,dec_pri_up2=NAN)
-    Average(1,dec_pri_dn1,IEEE4,dec_pri_dn1=NAN)
-    Average(1,dec_pri_dn2,IEEE4,dec_pri_dn2=NAN)
-    Totalize(1,n,UINT2,FALSE)
-      FieldNames("tblcalls_Tot")
+
+  DataTable(stats5_srs,True,-1)
+    DataInterval(0,STAT_OUT_5,min,1)
+    CardOut(1,-1)
+    Sample(4,dec_out(1),IEEE4)
+    Sample(12,work_srs_out(1),IEEE4)
   EndTable
 #EndIf
 
@@ -1033,7 +1052,7 @@ DisplayMenu("REACCH DAQ", -1) 'add submenu to main
         MenuPick(No, Yes)
     EndSubMenu
     SubMenu("Decagon NDVI/PRI")
-      MenuItem("Enable?", NDVIPRI_ENABLED)
+      MenuItem("Enable?", DEC_SRS_ENABLED)
         MenuPick(No, Yes)
       DisplayLine("SDI Addresses:")
       DisplayValue("NDVI up-facing", DEC_NDVI_UP_SDI_ADDR)
@@ -1346,13 +1365,28 @@ BeginProg
     PAR_flxdens = PAR_mV*li190_dens_mult
     PAR_totflx = PAR_mV*li190_tot_mult
 
-    #If (NDVIPRI_ENABLED) Then
-      SDI12Recorder(dec_ndvi_up1,SDI_COM_ADDR,DEC_NDVI_UP_SDI_ADDR,"M!",1.0,0)
-	    SDI12Recorder(dec_ndvi_dn1,SDI_COM_ADDR,DEC_NDVI_DN_SDI_ADDR,"M!",1.0,0)
-      SDI12Recorder(dec_pri_up1,SDI_COM_ADDR,DEC_PRI_UP_SDI_ADDR,"M!",1.0,0)
-	    SDI12Recorder(dec_pri_dn1,SDI_COM_ADDR,DEC_PRI_DN_SDI_ADDR,"M!",1.0,0)
-      CallTable(stats5_ui)
-      CallTable(stats30_ui)
+    #If (DEC_SRS_ENABLED) Then
+      SDI12Recorder(decagon(1),SDI_COM_ADDR,DEC_NDVI_UP_SDI_ADDR,"M!",1.0,0)
+	    SDI12Recorder(decagon(4),SDI_COM_ADDR,DEC_NDVI_DN_SDI_ADDR,"M!",1.0,0)
+      SDI12Recorder(decagon(7),SDI_COM_ADDR,DEC_PRI_UP_SDI_ADDR,"M!",1.0,0)
+	    SDI12Recorder(decagon(10),SDI_COM_ADDR,DEC_PRI_DN_SDI_ADDR,"M!",1.0,0)
+	    CallTable(work_srs)
+	    If (work_srs.Output(1,1)) Then
+	      GetRecord(work_srs_out(1),work_srs,1)
+	      alpha_NDVI = incident_650nm / incident_810nm
+	      'reject alpha vlaue if either sensor value exceeds spec'd range
+	      If (incident_650nm < 0 OR incident_650nm > 2 OR incident_810nm < 0 _
+	        OR incident_810nm > 2) Then alpha_NDVI = NAN
+        aRn = reflected_810nm * IIF(alpha_NDVI=NAN, DEF_ALPHA_NDVI, alpha_NDVI)
+        NDVI = (aRn - reflected_650nm)/(aRn + reflected_650nm)
+
+	      alpha_PRI = incident_570nm / incident_531nm
+        If (incident_570nm < 0 OR incident_570nm > 2 OR incident_531nm < 0 _
+          OR incident_531nm > 2) Then alpha_PRI = NAN 
+        aRn = reflected_531nm * IIF(alpha_PRI=NAN, DEF_ALPHA_PRI, alpha_PRI)
+        PRI = (aRn - reflected_570nm)/(aRn + reflected_570nm)
+      EndIf 
+      CallTable(stats5_srs)
     #EndIf
     
     If (save_changes) Then
