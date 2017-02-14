@@ -706,24 +706,24 @@ DataTable (tsdata,TRUE,-1)
   CardOut (0,-1)
   Sample (4,sonic_irga_raw(1),IEEE4)
     FieldNames ("Ux,Uy,Uz,Ts")
-    Units Ux = m/s
-    Units Uy = m/s
-    Units Uz = m/s
-    Units Ts = C
+'    Units Ux = m/s
+'    Units Uy = m/s
+'    Units Uz = m/s
+'    Units Ts = C
   Sample (1,sonic_irga_raw(5),FP2)
     FieldNames ("diag_sonic")
-    Units diag_sonic = bitmap
+'    Units diag_sonic = bitmap
   Sample (5,sonic_irga_raw(6),IEEE4)
     FieldNames ("CO2,H2O,diag_irga,amb_tmpr,amb_press")
-    Units CO2 = mg/m^3
-    Units H2O = g/m^3
-    Units diag_irga = bitmap
-    Units amb_tmpr = C
-    Units amb_press = kPa
+'    Units CO2 = mg/m^3
+'    Units H2O = g/m^3
+'    Units diag_irga = bitmap
+'    Units amb_tmpr = C
+'    Units amb_press = kPa
   Sample (2,sonic_irga_raw(11),FP2)
     FieldNames ("CO2_signal,H2O_signal")
-    Units CO2_signal = unity
-    Units H2O_signal = unity
+'    Units CO2_signal = unity
+'    Units H2O_signal = unity
 EndTable
 
 '5min statistics
