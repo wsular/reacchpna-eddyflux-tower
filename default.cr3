@@ -704,7 +704,7 @@ DataTable (tsdata,TRUE,-1)
   'FieldNames used in this table because the aligned variables need the names
   DataInterval (0,FAST_INTV,mSec,100)
   CardOut (0,-1)
-  Sample (4,sonic_irga_raw(1),IEEE4)
+  Sample (4,sonic_irga_raw(1),FP2)
     FieldNames ("Ux,Uy,Uz,Ts")
 '    Units Ux = m/s
 '    Units Uy = m/s
@@ -713,12 +713,14 @@ DataTable (tsdata,TRUE,-1)
   Sample (1,sonic_irga_raw(5),FP2)
     FieldNames ("diag_sonic")
 '    Units diag_sonic = bitmap
-  Sample (5,sonic_irga_raw(6),IEEE4)
-    FieldNames ("CO2,H2O,diag_irga,amb_tmpr,amb_press")
+  Sample (4,sonic_irga_raw(6),FP2)
+    FieldNames ("CO2,H2O,diag_irga,amb_tmpr")
 '    Units CO2 = mg/m^3
 '    Units H2O = g/m^3
 '    Units diag_irga = bitmap
 '    Units amb_tmpr = C
+  Sample (1,sonic_irga_raw(10),IEEE4)
+    FieldNames ("amb_press")
 '    Units amb_press = kPa
   Sample (2,sonic_irga_raw(11),FP2)
     FieldNames ("CO2_signal,H2O_signal")
