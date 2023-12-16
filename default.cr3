@@ -1,19 +1,9 @@
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-' REgional Approaches to Climate CHange 
-' Laboratory for Atmospheric Research
-' Washington State University
+' REgional Approaches to Climate CHange (2011-2016)    reacchpna.org
+' Laboratory for Atmospheric Research at Washington State University
+' https://bitbucket.org/wsular/2011-reacch-tower-logger
 '
-' By: Patrick O'Keeffe <pokeeffe@wsu.edu>
-'
-' Derived from copyrighted works purchased from Campbell Scientific, Inc.
-'
-' Description: This program combines fast measurements of CO2 and H2O with 3D wind speeds  
-'   to generate near real-time surface fluxes of CO2, latent & sensible heat. Additional 
-'   meteorological statistics are produced in five and thirty minute intervals. 
-' 
-'========================================================================================
 '==========================  SEMI-EDITABLE VALUES  ======================================
-'========================================================================================
 '----- TIMEZONE -----
 'This must be set as a constant for use with GPS instruction. It cannot be dynamically 
 'assigned based on logger's serial # because of this fact.
@@ -22,7 +12,7 @@ Const UTC_OFFSET = -8    'offset from UTC as +/- hours; PST = -8
 '----- PROGRAM TIMING -----
 Const FAST_INTV = 100     'length of primary scan interval, milliseconds
 Const SLOW_INTV = 1       'length of secondary scan interval, seconds
-Const SOIL_INTV = 5       'length of heat flux plate scan interval, seconds
+Const SOIL_INTV = 15      'length of slowest sensors (soil probes, gps, shfp)
 Const STAT_OUT_5 = 5   	  'stats output interval #1, minutes
 Const STAT_OUT_30 = 30		  'stats output interval #2, minutes; use multiple of STAT_INT1
 Const SDM_PER = 30         'default SDM clock speed
@@ -78,68 +68,12 @@ Const DEC_NDVI_DN_SDI_ADDR = 1
 Const DEC_PRI_UP_SDI_ADDR = 2
 Const DEC_PRI_DN_SDI_ADDR = 3
 
-
-'----- SITE-SPECIFIC DEFAULT VALUES ------
-' These values are used by the datalogger when a calibration file is not available on the
-' datalogger's CPU. If it cannot find the calfile, it looks up the appropriate values to 
-' use based on the serial number of the datalogger (!). HOWEVER, if there is a calfile 
-' available, these values are not explicitly used -- they are read from the calfile. Values
-' read from a calfile may not be the same as these default values (though this really only 
-' applies to boolean sensor flags, not sensitivities, etc)
-'
-' Note that site timezone is specified via the UTC_OFFSET constant above; due to limitations 
-' of the datalogger programming language, it is not possible to use the same technique for it
-' as is used for these values.
-'
-' *_SERIAL_NO          integer serial number of datalogger at monitoring site
-' *_CSAT_AZIMUTH       direction the sonic anemometer is pointing w.r.t _TRUE_ north. 
-'                      it may be more clear to future users to express as azimuth+declination
-' *_NRLITE_SENS        sensitivity of NR-Lite2 net rad., uV/W/m^2
-' *_LI190_SENS         sensitivity of LI-190SB quantum PAR sensor, uA/mmol/s/m^2
-' *_SENSOR_HFP         boolean: is the pair of soil heat flux plates installed at the site?
-' *_SENSOR_NDVI        boolean: did UI install Decagon "NDVI" sensors at the site?
-' *_SENSOR_PRI         boolean: did UI install Decagon "PRI" sensors at the site?
-'
-' Also, some default values are always false but could possibly be read True from a calfile:
-'   sensor_lgr_n2oco
-'   sensor_pic_co2ch4
-'
-Const CFNT_SERIAL_NO     = 6034
-Const CFNT_CSAT_AZIMUTH  = 186
-Const CFNT_NRLITE_SENS   = 13.3
-Const CFNT_LI190_SENS    = 6.26
-Const CFNT_SENSOR_SHFP   = True
-
-Const LIND_SERIAL_NO     = 6035
-Const LIND_CSAT_AZIMUTH  = 188
-Const LIND_NRLITE_SENS   = 12.6
-Const LIND_LI190_SENS    = 6.84
-Const LIND_SENSOR_SHFP   = False
-
-Const CFCT_SERIAL_NO     = 6503
-Const CFCT_CSAT_AZIMUTH  = 184+15
-Const CFCT_NRLITE_SENS   = 12.2
-Const CFCT_LI190_SENS    = 6.18
-Const CFCT_SENSOR_SHFP   = False
-
-Const MMTN_SERIAL_NO     = 6506
-Const MMTN_CSAT_AZIMUTH  = 180 
-Const MMTN_NRLITE_SENS   = 12.2
-Const MMTN_LI190_SENS    = 6.03
-Const MMTN_SENSOR_SHFP   = False
-
-Const MSLK_SERIAL_NO     = 6505
-Const MSLK_CSAT_AZIMUTH  = 254
-Const MSLK_NRLITE_SENS   = 12.3
-Const MSLK_LI190_SENS    = 6.5
-Const MSLK_SENSOR_SHFP   = False
-
-'Const LAB1_SERIAL_NO     = 6506
-'Const LAB1_CSAT_AZIMUTH  = 0
-'Const LAB1_NRLITE_SENS   = 12.0
-'Const LAB1_LI190_SENS    = 6.5
-'Const LAB1_SENSOR_SHFP   = False
-
+ConstTable
+  Const SHFP_ENABLED = False
+  Const DEC_SRS_ENABLED = True
+  Const LGR_N2O_ENABLED = False
+  Const PIC_CH4_ENABLED = False
+EndConstTable
 
 '----- FIXED CALIBRATION VALUES ------
 Const HMP_T_MULT       = (60 - -80)/1000    '-80 to +60 *C over 1V = 0.14
@@ -159,21 +93,8 @@ Const TE525_OFFSET     = 0
 ' **These values depend on site-specific values; assignment is deferred
 '   to program execution time.
 
-'----- OPTIONAL BUT FIXED CALIBRATION VALUES -----
-'  HFP_SENS        sensitivity of heat flux plate, uV/W/m^2
-'  HFP_R_SELF      resistance of heating element in heat flux plate, Ohms
-'  HFP_A_SELF      area of the sensor face of the heat flux plate, m^2
-Const HFP_1_SENS    = 62.3
-Const HFP_1_R_SELF  = 99.9
-Const HFP_1_A_SELF  = 0.003885
-Const HFP_2_SENS    = 63.2 
-Const HFP_2_R_SELF  = 99.4
-Const HFP_2_A_SELF  = 0.003885
 
-
-'========================================================================================
 '==========================  NO USER-SERVICEABLE PARTS BELOW  ===========================
-'========================================================================================
 '-----  PHYSICAL CONSTANTS  -----
 Const MU_WPL = 29/18       'Ratio of the molecular weight of dry air to water vapor
 Const R = .0083143         'Universal gas constant [kPa m^3/(K mol)]
@@ -198,46 +119,75 @@ Units n = samples
 Dim sensor_shfp As Boolean 'set based on site SN
 
 '----- RETAINED SETTINGS -----
-Const NUM_SETTINGS = {16} 'set to length of settings array
+Const NUM_SETTINGS = {26} 'set to length of settings array
 Const WRITEFILE = 0
 Const READFILE = 1
 
-Dim save_changes As Boolean
 Dim settings(NUM_SETTINGS) 'values retained via file written to datalogger CPU
-Alias settings(1)  = sensor_dec_ndvi
-Alias settings(2)  = sensor_dec_pri
-Alias settings(3)  = sensor_lgr_n2oco 
-Alias settings(4)  = lgr_n2o_mult
-Alias settings(5)  = lgr_n2o_offset
-Alias settings(6)  = lgr_co_mult
-Alias settings(7)  = lgr_co_offset
-Alias settings(8)  = lgr_h2o_mult
-Alias settings(9)  = lgr_h2o_offset
-Alias settings(10) = sensor_pic_co2ch4
-Alias settings(11) = pic_co2_mult
-Alias settings(12) = pic_co2_offset
-Alias settings(13) = pic_ch4_mult
-Alias settings(14) = pic_ch4_offset
-Alias settings(15) = pic_h2o_mult
-Alias settings(16) = pic_h2o_offset 
+Alias settings(1)  = hfp1_sens
+Alias settings(2)  = hfp1_R
+Alias settings(3)  = hfp1_A
+Alias settings(4)  = hfp2_sens
+Alias settings(5)  = hfp2_R
+Alias settings(6)  = hfp2_A
+Alias settings(7)  = lgr_n2o_mult
+Alias settings(8)  = lgr_n2o_offset
+Alias settings(9)  = lgr_co_mult
+Alias settings(10) = lgr_co_offset
+Alias settings(11) = lgr_h2o_mult
+Alias settings(12) = lgr_h2o_offset
+Alias settings(13) = pic_co2_mult
+Alias settings(14) = pic_co2_offset
+Alias settings(15) = pic_ch4_mult
+Alias settings(16) = pic_ch4_offset
+Alias settings(17) = pic_h2o_mult
+Alias settings(18) = pic_h2o_offset
+Alias settings(19) = sonic_azimuth
+Alias settings(20) = NRLite2_sens
+Alias settings(21) = LI190SB_sens
+Alias settings(22) = soil_5_enabled
+Alias settings(23) = soil_6_enabled
+Alias settings(24) = soil_7_enabled
+Alias settings(25) = soil_8_enabled
+Alias settings(26) = soil_9_enabled
+Units hfp1_sens = uV/W/m^2
+Units hfp1_R = ohms
+Units hfp1_A = m^2
+Units hfp2_sens = uV/W/m^2
+Units hfp2_R = ohms
+Units hfp2_A = m^2
+'ignore mults & offsets
+Units sonic_azimuth = degEofTN
+Units NRLite2_sens = uV/W/m^2
+Units LI190SB_sens = uA/mmol/s/m^2
 
 Dim choice(NUM_SETTINGS)
-Alias choice(1)  = choice_dec_ndvi
-Alias choice(2)  = choice_dec_pri
-Alias choice(3)  = choice_lgr_n2oco
-Alias choice(4)  = choice_lgr_n2o_mult
-Alias choice(5)  = choice_lgr_n2o_offset
-Alias choice(6)  = choice_lgr_co_mult
-Alias choice(7)  = choice_lgr_co_offset
-Alias choice(8)  = choice_lgr_h2o_mult
-Alias choice(9)  = choice_lgr_h2o_offset
-Alias choice(10) = choice_pic_co2ch4
-Alias choice(11) = choice_pic_co2_mult
-Alias choice(12) = choice_pic_co2_offset
-Alias choice(13) = choice_pic_ch4_mult
-Alias choice(14) = choice_pic_ch4_offset
-Alias choice(15) = choice_pic_h2o_mult
-Alias choice(16) = choice_pic_h2o_offset 
+Alias choice(1)  = choice_hfp1_sens
+Alias choice(2)  = choice_hfp1_R
+Alias choice(3)  = choice_hfp1_A
+Alias choice(4)  = choice_hfp2_sens
+Alias choice(5)  = choice_hfp2_R
+Alias choice(6)  = choice_hfp2_A
+Alias choice(7)  = choice_lgr_n2o_mult
+Alias choice(8)  = choice_lgr_n2o_offset
+Alias choice(9)  = choice_lgr_co_mult
+Alias choice(10) = choice_lgr_co_offset
+Alias choice(11) = choice_lgr_h2o_mult
+Alias choice(12) = choice_lgr_h2o_offset
+Alias choice(13) = choice_pic_co2_mult
+Alias choice(14) = choice_pic_co2_offset
+Alias choice(15) = choice_pic_ch4_mult
+Alias choice(16) = choice_pic_ch4_offset
+Alias choice(17) = choice_pic_h2o_mult
+Alias choice(18) = choice_pic_h2o_offset
+Alias choice(19) = choice_sonic_azimuth
+Alias choice(20) = choice_NRLite2_sens
+Alias choice(21) = choice_LI190SB_sens
+Alias choice(22) = choice_soil_5_enabled
+Alias choice(23) = choice_soil_6_enabled
+Alias choice(24) = choice_soil_7_enabled
+Alias choice(25) = choice_soil_8_enabled
+Alias choice(26) = choice_soil_9_enabled
 
 '----- SELF-MONITORING -----
 Dim SkippedScans(3)
@@ -263,9 +213,6 @@ Const BANDWIDTH = 20            '20 = 20 Hz
 Const DELAY_EC150 = INT (4000/FAST_INTV/BANDWIDTH) 'Automatically computed lag of the EC150 data.
 Const EC150_REC_BCK = OFFSET-DELAY_EC150 'Number of records back to align EC150 data.
 
-Dim csat_azimuth                      'set automatically depending on logger serial no.
-Units csat_azimuth = degreesEofTN
-
 Dim sonic_irga_raw(12)                     'unlagged EC150 irga + CSAT3A sonic data
 
 Public sonic(5)                            'lagged working CSAT3A data
@@ -287,7 +234,6 @@ Alias irga(5) = amb_press
 Alias irga(6) = CO2_signal
 Alias irga(7) = H2O_signal
 Alias irga(8) = Tc
-Alias irga(9) = Td
 Units CO2 = mg/m^3
 Units H2O = g/m^3
 Units diag_irga = bitmap
@@ -296,7 +242,6 @@ Units amb_press = kPa
 Units CO2_signal = unity
 Units H2O_signal = unity
 Units Tc = C
-Units Td = C
 
 Dim mask As Long
 Dim diag_sonic_tmp As Long                 'used to break out the CSAT3A sonic head diagnostic bits.
@@ -307,11 +252,10 @@ Dim irga_disable_f As Boolean               'TRUE when EC150 sends bad data.
 Dim cov_array_sonic(1,4)                   'used to hold input data for cov instructions 
 Dim cov_array_cs(3,4)  
 
-Dim etcvar(4)
+Dim etcvar(3)
 Alias etcvar(1)  = divisor                  'used to find molar mixing ratio.
 Alias etcvar(2)  = rho_d_mean               'Density of dry air used in WPL [kg / m^3].
 Alias etcvar(3)  = sigma_wpl                'density of water vapor / density of dry air.
-Alias etcvar(4)  = Td_tmp
 
 Public results(19)
 Alias results(1)  = Ts_absolute       'sonic temp in Kelvin
@@ -373,8 +317,6 @@ Units RH_hmp_Avg = %
 
 
 '**********  NR-Lite2  **********
-Dim nrlite_sens
-Units nrlite_sens = uV/W/m^2
 Dim nrlite_mult
 
 Public NRLITE(2)
@@ -388,8 +330,6 @@ Public hor_wind_raw
 
 
 '**********  LI190SB quantum PAR sensor  ***********
-Dim li190_sens
-Units li190_sens = uA/mmol/s/m^2
 Dim li190_dens_mult
 Dim li190_tot_mult
 
@@ -496,36 +436,37 @@ Units soil_hfp2_heat_flux = W/m^2
 Units soil_hfp1_sensitivity = W/m^2/mV
 Units soil_hfp2_sensitivity = W/m^2/mV
 Public hfp_isCalibrating As Boolean = {False}
-
-Const HFP_CAL_RUNAVG = 20/SOIL_INTV   'use 20 sec running averages
-Const HFP_CAL_T_START = 120            'starting time into cal. interval, seconds
-Const HFP_CAL_T_HEATON = HFP_CAL_T_START + 20
-Const HFP_CAL_T_END = HFP_CAL_T_START + 190
-Const HFP_CAL_T_HEATOFF = HFP_CAL_T_START + 200
-Const HFP_CAL_T_FINISH = HFP_CAL_T_START + 380
-Const HFP_R_CUR = 10                  'current sensing resistor = 10 Ohm, 1%, 1/4 W
-Const HFP_1_SELFCAL_MULT = HFP_1_R_SELF / (2 * HFP_R_CUR^2 * HFP_1_A_SELF)
-Const HFP_2_SELFCAL_MULT = HFP_2_R_SELF / (2 * HFP_R_CUR^2 * HFP_2_A_SELF)
-
-Public hfp_sw12_isOn As Boolean
-Dim hfp_selfcal(8,2)
-Alias hfp_selfcal(1,1) = hfp1_mVs          'inst. value of soil heat flux
-Alias hfp_selfcal(2,1) = hfp1_mVs_runavg   'run avg of soil heat flux
-Alias hfp_selfcal(3,1) = hfp1_mVs_t0       'soil heat flux @ start of cal cycle
-Alias hfp_selfcal(4,1) = hfp1_mVs_th       'soil heat flux after heating in cal cycle
-Alias hfp_selfcal(5,1) = hfp1_mVs_te       'soil heat flux symmetrically after cal cycle
-Alias hfp_selfcal(6,1) = hfp1_Vh           'inst. ref voltage
-Alias hfp_selfcal(7,1) = hfp1_Vh_runavg    'run avg of ref voltage
-Alias hfp_selfcal(8,1) = hfp1_Vh_th        'ref voltage after heating in cal cycle
-Alias hfp_selfcal(1,2) = hfp2_mVs          'inst. value of soil heat flux
-Alias hfp_selfcal(2,2) = hfp2_mVs_runavg   'run avg of soil heat flux
-Alias hfp_selfcal(3,2) = hfp2_mVs_t0       'soil heat flux @ start of cal cycle
-Alias hfp_selfcal(4,2) = hfp2_mVs_th       'soil heat flux after heating in cal cycle
-Alias hfp_selfcal(5,2) = hfp2_mVs_te       'soil heat flux symmetrically after cal cycle
-Alias hfp_selfcal(6,2) = hfp2_Vh           'inst. ref voltage
-Alias hfp_selfcal(7,2) = hfp2_Vh_runavg    'run avg of ref voltage
-Alias hfp_selfcal(8,2) = hfp2_Vh_th        'ref voltage after heating in cal cycle
-
+  
+#If (SHFP_ENABLED) Then  
+  Const HFP_CAL_RUNAVG = 20/SOIL_INTV   'use 20 sec running averages
+  Const HFP_CAL_T_START = 120            'starting time into cal. interval, seconds
+  Const HFP_CAL_T_HEATON = HFP_CAL_T_START + 20
+  Const HFP_CAL_T_END = HFP_CAL_T_START + 190
+  Const HFP_CAL_T_HEATOFF = HFP_CAL_T_START + 200
+  Const HFP_CAL_T_FINISH = HFP_CAL_T_START + 380
+  Const HFP_R_CUR = 10                  'current sensing resistor = 10 Ohm, 1%, 1/4 W
+  Dim hfp1_selfcal_mult
+  Dim hfp2_selfcal_mult
+  
+  Public hfp_sw12_isOn As Boolean
+  Dim hfp_selfcal(8,2)
+  Alias hfp_selfcal(1,1) = hfp1_mVs          'inst. value of soil heat flux
+  Alias hfp_selfcal(2,1) = hfp1_mVs_runavg   'run avg of soil heat flux
+  Alias hfp_selfcal(3,1) = hfp1_mVs_t0       'soil heat flux @ start of cal cycle
+  Alias hfp_selfcal(4,1) = hfp1_mVs_th       'soil heat flux after heating in cal cycle
+  Alias hfp_selfcal(5,1) = hfp1_mVs_te       'soil heat flux symmetrically after cal cycle
+  Alias hfp_selfcal(6,1) = hfp1_Vh           'inst. ref voltage
+  Alias hfp_selfcal(7,1) = hfp1_Vh_runavg    'run avg of ref voltage
+  Alias hfp_selfcal(8,1) = hfp1_Vh_th        'ref voltage after heating in cal cycle
+  Alias hfp_selfcal(1,2) = hfp2_mVs          'inst. value of soil heat flux
+  Alias hfp_selfcal(2,2) = hfp2_mVs_runavg   'run avg of soil heat flux
+  Alias hfp_selfcal(3,2) = hfp2_mVs_t0       'soil heat flux @ start of cal cycle
+  Alias hfp_selfcal(4,2) = hfp2_mVs_th       'soil heat flux after heating in cal cycle
+  Alias hfp_selfcal(5,2) = hfp2_mVs_te       'soil heat flux symmetrically after cal cycle
+  Alias hfp_selfcal(6,2) = hfp2_Vh           'inst. ref voltage
+  Alias hfp_selfcal(7,2) = hfp2_Vh_runavg    'run avg of ref voltage
+  Alias hfp_selfcal(8,2) = hfp2_Vh_th        'ref voltage after heating in cal cycle
+#EndIf
 
 '**********  Los Gatos N2O/CO analyzer  **********
 Public lgrn2oco(3)                          'data variables
@@ -536,7 +477,6 @@ Units lgr_n2o = scale-dependent
 Units lgr_co = scale-dependent
 Units lgr_h2o = scale-dependent
 
-
 '**********  Picarro CO2/CH4 analyzer  **********
 Public picco2ch4(3) As Float
 Alias picco2ch4(1) = pic_co2
@@ -546,24 +486,46 @@ Units pic_co2 = scale-dependent
 Units pic_ch4 = scale-dependent
 Units pic_h2o = scale-dependent
 
-
 '**********  Decagon 2nd gen. sensors (UI) **********
-Public dec_ndvi_up(2) As Float
-Alias dec_ndvi_up(1) = dec_ndvi_up1
-Alias dec_ndvi_up(2) = dec_ndvi_up2
-Public dec_ndvi_dn(2) As Float
-Alias dec_ndvi_dn(1) = dec_ndvi_dn1
-Alias dec_ndvi_dn(2) = dec_ndvi_dn2
-Public dec_pri_up(2) As Float
-Alias dec_pri_up(1) = dec_pri_up1
-Alias dec_pri_up(2) = dec_pri_up2
-Public dec_pri_dn(2) As Float
-Alias dec_pri_dn(1) = dec_pri_dn1
-Alias dec_pri_dn(2) = dec_pri_dn2
-Units dec_ndvi_up = unknown
-Units dec_ndvi_dn = unknown
-Units dec_pri_up = unknown
-Units dec_pri_dn = unknown
+Const DEF_ALPHA_NDVI = 0.98
+Const DEF_ALPHA_PRI = 1.86
+Dim aRn
+
+#If (DEC_SRS_ENABLED) Then
+  Public decagon(12) As Float
+  
+  Dim work_srs_out(12)
+  Alias work_srs_out(1)  = incident_650nm  'red
+  Alias work_srs_out(2)  = incident_810nm  'NIR
+  Alias work_srs_out(3)  = NDVI_up_tilt
+  Alias work_srs_out(4)  = reflected_650nm
+  Alias work_srs_out(5)  = reflected_810nm
+  Alias work_srs_out(6)  = NDVI_down_tilt
+  Alias work_srs_out(7)  = incident_531nm
+  Alias work_srs_out(8)  = incident_570nm
+  Alias work_srs_out(9)  = PRI_up_tilt
+  Alias work_srs_out(10)  = reflected_531nm
+  Alias work_srs_out(11) = reflected_570nm
+  Alias work_srs_out(12) = PRI_down_tilt
+  Units incident_650nm = W/m^2/nm
+  Units incident_810nm = W/m^2/nm
+  Units reflected_650nm = W/m^2/nm/sr
+  Units reflected_810nm = W/m^2/nm/sr
+  Units incident_531nm = W/m^2/nm
+  Units incident_570nm = W/m^2/nm
+  Units reflected_531nm = W/m^2/nm/sr
+  Units reflected_570nm = W/m^2/nm/sr
+
+  Public dec_out(4)
+  Alias dec_out(1) = NDVI
+  Alias dec_out(2) = PRI
+  Alias dec_out(3) = alpha_NDVI
+  Alias dec_out(4) = alpha_PRI
+  Units NDVI = ratio
+  Units PRI = ratio
+  Units alpha_NDVI = ratio
+  Units alpha_PRI = ratio
+#EndIf
 
 
 '**********  Intermediate variables  **********
@@ -644,10 +606,7 @@ Units e_hmp_Avg = kPa
 Units e_sat_hmp_Avg = kPa
 Units samples_possible = samples
 
-'========================================================================================
 '===========================  PROCESSING DATA TABLES  ===================================
-'========================================================================================
-
 DataTable(work_delay_ec100,TRUE,OFFSET) 'handles lagging CSAT+IRGA data
   TableHide
   Sample(12,sonic_irga_raw(1),IEEE4)
@@ -695,9 +654,7 @@ DataTable(work_30min,TRUE,1)
   Totalize(1,n,IEEE4,False)
 EndTable
 
-'========================================================================================
 '===========================  BASE OUTPUT DATA TABLES  ==================================
-'========================================================================================
 
 'time series data @ 10hz
 DataTable (tsdata,TRUE,-1)
@@ -907,15 +864,9 @@ DataTable (site_info,TRUE,10)
   Sample(1,UTC_OFFSET,FP2)
     FieldNames("UTC_offset")
     Units UTC_OFFSET = hours
-  Sample(1,csat_azimuth,FP2)
-    FieldNames("sonic_azimuth")
-    Units sonic_azimuth = degEofTN
-  Sample(1,nrlite_sens,FP2)           'NR-Lite2 sensitivity
-    FieldNames("NRLite2_sens")
-    Units NRLite2_sens = uV/W/m^2
-  Sample(1,li190_sens,FP2)            'LI-190SB sensitivity
-    FieldNames("LI190SB_sens")
-    Units LI190SB_sens = uA/mmol/s/m^2
+  Sample(1,sonic_azimuth,FP2)
+  Sample(1,NRLite2_sens,FP2)
+  Sample(1,LI190SB_sens,FP2)
   Sample(1,soil_hfp1_sensitivity,IEEE4)            'heat flux plate #1 info
     FieldNames("HFP_1_sens")
     Units HFP_1_SENS = W/m^2/mV
@@ -935,13 +886,12 @@ DataTable (site_info,TRUE,10)
 EndTable
 
 'metadata pertaining to optional sensors
+'XXXX TODO how should this table be changed?
 DataTable(extra_info,True,10)
   CardOut(0,1000)
-  Sample(1,sensor_dec_ndvi,Boolean)
-    FieldNames("Decagon_NDVI_installed")
-  Sample(1,sensor_dec_pri,Boolean)
-    FieldNames("Decagon_PRI_installed")
-  Sample(1,sensor_lgr_n2oco,Boolean)
+  Sample(1,DEC_SRS_ENABLED,Boolean)
+    FieldNames("Decagon_SRS_installed")
+  Sample(1,LGR_N2O_ENABLED,Boolean)
     FieldNames("LGR_n2oco_installed")
   Sample(1,lgr_n2o_mult,IEEE4)
   Sample(1,lgr_n2o_offset,IEEE4)
@@ -949,7 +899,7 @@ DataTable(extra_info,True,10)
   Sample(1,lgr_co_offset,IEEE4)
   Sample(1,lgr_h2o_mult,IEEE4)
   Sample(1,lgr_h2o_offset,IEEE4)
-  Sample(1,sensor_pic_co2ch4,Boolean)
+  Sample(1,PIC_CH4_ENABLED,Boolean)
     FieldNames("Picarro_co2ch4_installed")
   Sample(1,pic_co2_mult,IEEE4)
   Sample(1,pic_co2_offset,IEEE4)
@@ -959,131 +909,76 @@ DataTable(extra_info,True,10)
   Sample(1,pic_h2o_offset,IEEE4)
 EndTable
 
-'========================================================================================
 '===========================  SUPPLEMENTAL OUTPUT DATA TABLES  ==========================
-'========================================================================================
-DataTable(tsdata_extra,(sensor_lgr_n2oco OR sensor_pic_co2ch4),-1)
-  DataInterval(0,FAST_INTV,mSec,100)
-  CardOut(0,-1)
-  Sample(1,lgr_n2o,IEEE4)
-  Sample(1,lgr_co,IEEE4)
-  Sample(1,lgr_h2o,IEEE4)
+#If (LGR_N2O_ENABLED OR PIC_CH4_ENABLED) Then
+  DataTable(tsdata_extra,True,-1)
+    DataInterval(0,FAST_INTV,mSec,100)
+    CardOut(0,-1)
+    Sample(1,lgr_n2o,IEEE4)
+    Sample(1,lgr_co,IEEE4)
+    Sample(1,lgr_h2o,IEEE4)
+  
+    Sample (1,pic_co2,IEEE4)
+    Sample (1,pic_ch4,IEEE4)
+    Sample (1,pic_h2o,IEEE4)
+  EndTable
+#EndIf
 
-  Sample (1,pic_co2,IEEE4)
-  Sample (1,pic_ch4,IEEE4)
-  Sample (1,pic_h2o,IEEE4)
-EndTable
+#If (DEC_SRS_ENABLED) Then
+  DataTable(work_srs,True,1)
+    TableHide
+    DataInterval(0,STAT_OUT_5,min,1)
+    Average(1,decagon(1),IEEE4,decagon(1)=NAN)
+    Average(1,decagon(2),IEEE4,decagon(2)=NAN)
+    Median (1,decagon(3),20,UINT2,decagon(3) > 2 OR decagon(3) < 0)
+    Average(1,decagon(4),IEEE4,decagon(4)=NAN)
+    Average(1,decagon(5),IEEE4,decagon(5)=NAN)
+    Median (1,decagon(6),20,UINT2,decagon(6) > 2 OR decagon(6) < 0)
+    Average(1,decagon(7),IEEE4,decagon(7)=NAN)
+    Average(1,decagon(8),IEEE4,decagon(8)=NAN)
+    Median (1,decagon(9),20,UINT2,decagon(9) > 2 OR decagon(9) < 0)
+    Average(1,decagon(10),IEEE4,decagon(10)=NAN)
+    Average(1,decagon(11),IEEE4,decagon(11)=NAN)
+    Median (1,decagon(12),20,UINT2,decagon(12) > 2 OR decagon(12) < 0)
+  EndTable
 
-DataTable(stats5_ui,(sensor_dec_ndvi OR sensor_dec_pri),-1)
-  DataInterval(0,STAT_OUT_5,min,10)
-  CardOut(0,-1) 
-  Average(1,dec_ndvi_up(1),IEEE4,dec_ndvi_up(1)=NAN)
-  Average(1,dec_ndvi_up(2),IEEE4,dec_ndvi_up(2)=NAN)
-  Average(1,dec_ndvi_dn(1),IEEE4,dec_ndvi_dn(1)=NAN)
-  Average(1,dec_ndvi_dn(2),IEEE4,dec_ndvi_dn(2)=NAN)
-  Average(1,dec_pri_up(1),IEEE4,dec_pri_up(1)=NAN)
-  Average(1,dec_pri_up(2),IEEE4,dec_pri_up(2)=NAN)
-  Average(1,dec_pri_dn(1),IEEE4,dec_pri_dn(1)=NAN)
-  Average(1,dec_pri_dn(2),IEEE4,dec_pri_dn(2)=NAN)
-  Totalize(1,n,UINT2,FALSE)
-    FieldNames("tblcalls_Tot")
-EndTable
+  DataTable(stats5_srs,True,-1)
+    DataInterval(0,STAT_OUT_5,min,1)
+    CardOut(1,-1)
+    Sample(4,dec_out(1),IEEE4)
+    Sample(12,work_srs_out(1),IEEE4)
+  EndTable
+#EndIf
 
-DataTable(stats30_ui,(sensor_dec_ndvi OR sensor_dec_pri),-1)
-  DataInterval(0,STAT_OUT_30,min,10)
-  CardOut(0,-1)
-  Average(1,dec_ndvi_up(1),IEEE4,dec_ndvi_up(1)=NAN)
-  Average(1,dec_ndvi_up(2),IEEE4,dec_ndvi_up(2)=NAN)
-  Average(1,dec_ndvi_dn(1),IEEE4,dec_ndvi_dn(1)=NAN)
-  Average(1,dec_ndvi_dn(2),IEEE4,dec_ndvi_dn(2)=NAN)
-  Average(1,dec_pri_up(1),IEEE4,dec_pri_up(1)=NAN)
-  Average(1,dec_pri_up(2),IEEE4,dec_pri_up(2)=NAN)
-  Average(1,dec_pri_dn(1),IEEE4,dec_pri_dn(1)=NAN)
-  Average(1,dec_pri_dn(2),IEEE4,dec_pri_dn(2)=NAN)
-  Totalize(1,n,UINT2,FALSE)
-    FieldNames("tblcalls_Tot")
-EndTable
-
-
-'========================================================================================
 '===============================  FUNCTIONS  ============================================
-'========================================================================================
 Function Topp_equation( dielectric )
   Return 4.3e-6*dielectric^3 - 5.5e-4*dielectric^2 + 2.92e-2*dielectric - 5.3e-2
 EndFunction
 
 
-'========================================================================================
 '===============================  SUBROUTINES  ==========================================
-'========================================================================================
-Sub load_site_values()
-  If     ( Status.SerialNumber = CFNT_SERIAL_NO ) Then     'Cook farm no till
-    csat_azimuth    = CFNT_CSAT_AZIMUTH
-    nrlite_sens     = CFNT_NRLITE_SENS
-    li190_sens      = CFNT_LI190_SENS
-    sensor_shfp     = CFNT_SENSOR_SHFP  
-  ElseIf ( Status.SerialNumber = LIND_SERIAL_NO ) Then     'Lind dryland station
-    csat_azimuth    = LIND_CSAT_AZIMUTH
-    nrlite_sens     = LIND_NRLITE_SENS
-    li190_sens      = LIND_LI190_SENS
-    sensor_shfp     = LIND_SENSOR_SHFP
-  ElseIf ( Status.SerialNumber = CFCT_SERIAL_NO ) Then     'Clark farm conventional till
-    csat_azimuth    = CFCT_CSAT_AZIMUTH
-    nrlite_sens     = CFCT_NRLITE_SENS
-    li190_sens      = CFCT_LI190_SENS
-    sensor_shfp     = CFCT_SENSOR_SHFP
-  ElseIf ( Status.SerialNumber = MMTN_SERIAL_NO ) Then      'Moscow Mountain Road
-    csat_azimuth    = MMTN_CSAT_AZIMUTH
-    nrlite_sens     = MMTN_NRLITE_SENS
-    li190_sens      = MMTN_LI190_SENS
-    sensor_shfp     = MMTN_SENSOR_SHFP
-  ElseIf ( Status.SerialNumber = MSLK_SERIAL_NO ) Then
-    csat_azimuth    = MSLK_CSAT_AZIMUTH
-    nrlite_sens     = MSLK_NRLITE_SENS
-    li190_sens      = MSLK_LI190_SENS
-    sensor_shfp     = MSLK_SENSOR_SHFP
-'  ElseIf ( Status.SerialNumber = LAB1_SERIAL_NO ) Then
-'    csat_azimuth    = LAB1_CSAT_AZIMUTH
-'    nrlite_sens     = LAB1_NRLITE_SENS
-'    li190_sens      = LAB1_LI190_SENS
-'    sensor_shfp     = LAB1_SENSOR_SHFP
-  Else    'error case
-    csat_azimuth    = NaN
-    nrlite_sens     = NaN
-    li190_sens      = NaN
-    sensor_shfp     = False
-  EndIf
-  nrlite_mult = 1000/nrlite_sens
-  li190_dens_mult = 1000/(li190_sens*0.604)
-  li190_tot_mult = (1/(li190_sens*0.604))*(FAST_INTV/1000)
-  If (sensor_shfp) Then
-    soil_hfp1_sensitivity = 1000/HFP_1_SENS
-    soil_hfp2_sensitivity = 1000/HFP_2_SENS
-  Else
-    soil_hfp1_heat_flux = NAN
-    soil_hfp1_sensitivity = 0
-    soil_hfp2_heat_flux = NAN
-    soil_hfp2_sensitivity = 0
-  EndIf
-EndSub
-
 Sub set_default_choices()
-  choice_dec_ndvi       = False
-  choice_dec_pri        = False
-  choice_lgr_n2oco      = False
+  choice_hfp1_sens      = 0
+  choice_hfp1_R         = 0
+  choice_hfp1_A         = 0
+  choice_hfp2_sens      = 0
+  choice_hfp2_R         = 0
+  choice_hfp2_A         = 0
   choice_lgr_n2o_mult   = 1.0
   choice_lgr_n2o_offset = 0
   choice_lgr_co_mult    = 1.0
   choice_lgr_co_offset  = 0
   choice_lgr_h2o_mult   = 1.0
   choice_lgr_h2o_offset = 0
-  choice_pic_co2ch4     = False
   choice_pic_co2_mult   = 1.0
   choice_pic_co2_offset = 0
   choice_pic_ch4_mult   = 1.0
   choice_pic_ch4_offset = 0
   choice_pic_h2o_mult   = 1.0
   choice_pic_h2o_offset = 0
+  choice_sonic_azimuth  = NAN
+  choice_NRLite2_sens   = 0
+  choice_LI190SB_sens   = 0
 EndSub
 
 Sub populate_choices()
@@ -1091,100 +986,35 @@ Sub populate_choices()
 EndSub
 
 Sub save_current_choices()
+  'input validation
+
   Move(settings(1),NUM_SETTINGS,choice(1),NUM_SETTINGS)
   Calfile(settings,NUM_SETTINGS,SETTINGS_FILE,WRITEFILE)
+
+  'update dependent variables
+  nrlite_mult = 1000/NRLite2_sens
+  li190_dens_mult = 1000/(LI190SB_sens*0.604)
+  li190_tot_mult = (1/(LI190SB_sens*0.604))*(FAST_INTV/1000)  
+  #If (SHFP_ENABLED) Then
+    soil_hfp1_sensitivity = 1000/hfp1_sens
+    soil_hfp2_sensitivity = 1000/hfp2_sens
+    hfp1_selfcal_mult = hfp1_R / (2 * HFP_R_CUR^2 * hfp1_A)
+    hfp2_selfcal_mult = hfp2_R / (2 * HFP_R_CUR^2 * hfp2_A)
+  #Else
+    soil_hfp1_heat_flux = NAN
+    soil_hfp1_sensitivity = 0
+    soil_hfp2_heat_flux = NAN
+    soil_hfp2_sensitivity = 0
+  #EndIf
+  #If (LGR_N2O_ENABLED) Then
+    Move(lgrn2oco(1),3,NAN,1)
+  #EndIf
+  #If (PIC_CH4_ENABLED) Then
+    Move(picco2ch4(1),3,NAN,1)
+  #EndIf
 EndSub
 
-
-'========================================================================================
-'================================  MENU  ================================================
-'========================================================================================
-Const Enable = True
-Const Disable = False
-Const Yes = True
-Const Cancel = False
-DisplayMenu("Sensor Setup", 0) 'add submenu to main
-  SubMenu("Decagon NDVI")
-    MenuItem("Recording", choice_dec_ndvi)
-      MenuPick(Disable,Enable)
-    SubMenu("View SDI Addresses")
-      DisplayValue("'up' label", DEC_NDVI_UP_SDI_ADDR)
-      DisplayValue("'dn' label", DEC_NDVI_DN_SDI_ADDR)
-    EndSubMenu
-  EndSubMenu
-  SubMenu("Decagon PRI")
-    MenuItem("Recording", choice_dec_pri)
-      MenuPick(Disable,Enable)
-    SubMenu("View SDI Addresses")
-      DisplayValue("'up' label", DEC_PRI_UP_SDI_ADDR)
-      DisplayValue("'dn' label", DEC_PRI_DN_SDI_ADDR)
-    EndSubMenu
-  EndSubMenu
-  SubMenu("LGR N2O/CO")
-    MenuItem("Recording", choice_lgr_n2oco)
-      MenuPick(Disable,Enable)
-    MenuItem("N2O Mult. (units/mV)", choice_lgr_n2o_mult)
-    MenuItem("N2O Offset (units@0mV)", choice_lgr_n2o_offset)
-    MenuItem("CO Mult. (units/mV)", choice_lgr_co_mult)
-    MenuItem("CO Offset (units@0mV)", choice_lgr_co_offset)
-    MenuItem("H2O Mult. (units/mV)", choice_lgr_h2o_mult)
-    MenuItem("H2O Offset (units@0mV)", choice_lgr_h2o_offset)
-  EndSubMenu
-  SubMenu("Picarro CO2/CH4/H2O")
-    MenuItem("Recording", choice_pic_co2ch4)
-      MenuPick(Disable,Enable)
-    MenuItem("CO2 Mult. (units/mV)", choice_pic_co2_mult)
-    MenuItem("CO2 Offset (units@0mV)", choice_pic_co2_offset)
-    MenuItem("CH4 Mult. (units/mV)", choice_pic_ch4_mult)
-    MenuItem("CH4 Offset (units@0mV)", choice_pic_ch4_offset)
-    MenuItem("H2O Mult. (units/mV)", choice_pic_h2o_mult)
-    MenuItem("H2O Offset (units@0mV)", choice_pic_h2o_offset)
-  EndSubMenu
-  SubMenu("Save changes")
-    MenuItem("Save now?", save_changes)
-      MenuPick(Cancel,Yes)
-  EndSubMenu
-EndMenu
-
-'DisplayMenu("Sensor Data", 0)
-'  SubMenu("sonic anem.")
-    'inst WD
-    'inst WS
-    'Ts
-    'diag
-'  EndSubMenu
-'  SubMenu("irga")
-    'co2 ppm
-    'h2o %v/v
-    'T
-    'P
-'  EndSubMenu
-'  SubMenu("T/RH probe")
-    'T
-    'RH
-'  EndSubMenu
-'  SubMenu("wind set")
-    'WS
-    'WD
-'  EndSubMenu
-'  SubMenu("netrad")
-    'DisplayValue
-'  EndSubMenu
-'  SubMenu("PAR")
-    'DisplayValue
-'  EndSubMenu
-'  SubMenu("sonic anem.")
-    'DisplayValue
-'  EndSubMenu
-'EndMenu
-
-
-'========================================================================================
-'================================  PROGRAM  =============================================
-'========================================================================================
-BeginProg
-  load_site_values()
-  
+Sub setup()
   filehandle = FileOpen(SETTINGS_FILE,"rb",0) ' attempt to open file
   FileClose(filehandle)
   If (filehandle = 0) Then 'if file not found
@@ -1194,12 +1024,119 @@ BeginProg
     populate_choices()
   EndIf
   save_current_choices()
-  Move(lgrn2oco(1),3,NAN,1)
-  Move(picco2ch4(1),3,NAN,1)
 
   CallTable (site_info)
   CallTable(extra_info)
+
+  Move(lgrn2oco(1),3,NAN,1)
+  Move(picco2ch4(1),3,NAN,1)
+  Move(fiveTM(1),15,NAN,1)
   SDMSpeed (SDM_PER)
+EndSub
+
+
+'================================  MENU  ================================================
+Const Enable = True
+Const Yes = True
+Const Apply = True
+Const Disable = False
+Const No = False
+Const Cancel = False
+Public save_changes As Boolean
+Dim recompile As Boolean
+
+DisplayMenu("REACCH DAQ", -1) 'add submenu to main
+  SubMenu("Initial Setup")
+    SubMenu("Soil heat flux plate")
+      MenuItem("Enable?", SHFP_ENABLED)
+        MenuPick(No, Yes)
+    EndSubMenu
+    SubMenu("Decagon NDVI/PRI")
+      MenuItem("Enable?", DEC_SRS_ENABLED)
+        MenuPick(No, Yes)
+      DisplayLine("SDI Addresses:")
+      DisplayValue("NDVI up-facing", DEC_NDVI_UP_SDI_ADDR)
+      DisplayValue("NDVI down-facing", DEC_NDVI_DN_SDI_ADDR)
+      DisplayValue("PRI up-facing", DEC_PRI_UP_SDI_ADDR)
+      DisplayValue("PRI down-facing", DEC_PRI_DN_SDI_ADDR)
+    EndSubMenu
+    SubMenu("LGR N2O/CO")
+      MenuItem("Enable?", LGR_N2O_ENABLED)
+        MenuPick(No, Yes)
+    EndSubMenu
+    SubMenu("Picarro CO2/CH4")
+      MenuItem("Enable?", PIC_CH4_ENABLED)
+        MenuPick(No, Yes)
+    EndSubMenu
+    MenuRecompile("Apply now?", recompile)
+      MenuPick(No, Apply) 
+  EndSubMenu
+
+  SubMenu("Settings")
+    MenuItem("Sonic azimuth", choice_sonic_azimuth)
+    MenuItem("NR sensitivity", choice_NRLite2_sens)
+    MenuItem("PAR sensitivity", choice_LI190SB_sens)
+    SubMenu("Soil moisture probes")
+      MenuItem("Enable 5 ?", soil_5_enabled)
+        MenuPick(Yes, No)
+      MenuItem("Enable 6 ?", soil_6_enabled)
+        MenuPick(Yes, No)
+      MenuItem("Enable 7 ?", soil_7_enabled)
+        MenuPick(Yes, No)
+      MenuItem("Enable 8 ?", soil_8_enabled)
+        MenuPick(Yes, No)
+      MenuItem("Enable 9 ?", soil_9_enabled)
+        MenuPick(Yes, No)
+    EndSubMenu
+    #If (SHFP_ENABLED) Then
+      SubMenu("Soil heat flux plate")
+        DisplayLine("Plate #1 (DF 6):")
+        MenuItem("Sensitivity", choice_hfp1_sens)
+        MenuItem("Resistance", choice_hfp1_R)
+        MenuItem("Area", choice_hfp1_A)
+        DisplayLine("Plate #2 (DF 7):")
+        MenuItem("Sensitivity", choice_hfp2_sens)
+        MenuItem("Resistance", choice_hfp2_R)
+        MenuItem("Area", choice_hfp2_A)
+      EndSubMenu
+    #Else
+      DisplayLine("SHFP disabled")
+    #EndIf
+    #If (LGR_N2O_ENABLED) Then
+      SubMenu("LGR N2O/CO/H2O")
+        MenuItem("N2O Mult. (units/mV)", choice_lgr_n2o_mult)
+        MenuItem("N2O Offset (units@0mV)", choice_lgr_n2o_offset)
+        MenuItem("CO Mult. (units/mV)", choice_lgr_co_mult)
+        MenuItem("CO Offset (units@0mV)", choice_lgr_co_offset)
+        MenuItem("H2O Mult. (units/mV)", choice_lgr_h2o_mult)
+        MenuItem("H2O Offset (units@0mV)", choice_lgr_h2o_offset)
+      EndSubMenu
+    #Else
+      DisplayLine("N2O/CO disabled")
+    #EndIf
+    #If (PIC_CH4_ENABLED) Then
+      SubMenu("Picarro CO2/CH4/H2O")
+        MenuItem("CO2 Mult. (units/mV)", choice_pic_co2_mult)
+        MenuItem("CO2 Offset (units@0mV)", choice_pic_co2_offset)
+        MenuItem("CH4 Mult. (units/mV)", choice_pic_ch4_mult)
+        MenuItem("CH4 Offset (units@0mV)", choice_pic_ch4_offset)
+        MenuItem("H2O Mult. (units/mV)", choice_pic_h2o_mult)
+        MenuItem("H2O Offset (units@0mV)", choice_pic_h2o_offset)
+      EndSubMenu
+    #Else
+      DisplayLine("CH4/CO2 disabled")
+    #EndIf
+    SubMenu("Save changes")
+      MenuItem("Save now?", save_changes)
+        MenuPick(Cancel,Yes)
+    EndSubMenu
+  EndSubMenu
+EndMenu
+
+'================================  PROGRAM  =============================================
+BeginProg
+  setup()
+
   Scan (FAST_INTV,mSec,FAST_BUFFER_SIZE,0)
         
     '== 034B wind vane acquisition 
@@ -1221,18 +1158,20 @@ BeginProg
     AvgRun (hor_wind,1,hor_wind_raw,NMBR_WND_SAMPLES) '3-sec running mean of horiz. WS
 
     '== optional LGR N2O/CO acquisition
-    If ( sensor_lgr_n2oco ) Then
-      VoltDiff(lgr_n2o,1,mv5000,LGR_N2O_DIFF,TRUE,0,INTEG,LGR_N2O_MULT,LGR_N2O_OFFSET)
-      VoltDiff(lgr_co,1,mv5000,LGR_CO_DIFF,TRUE,0,INTEG,LGR_CO_MULT,LGR_CO_OFFSET)
-      VoltDiff(lgr_h2o,1,mv5000,LGR_H2O_DIFF,TRUE,0,INTEG,LGR_H2O_MULT,LGR_H2O_OFFSET)
-    EndIf
+    #If (LGR_N2O_ENABLED) Then
+      VoltDiff(lgr_n2o,1,mv5000,LGR_N2O_DIFF,TRUE,0,INTEG,lgr_n2o_mult,lgr_n2o_offset)
+      VoltDiff(lgr_co,1,mv5000,LGR_CO_DIFF,TRUE,0,INTEG,lgr_co_mult,lgr_co_offset)
+      VoltDiff(lgr_h2o,1,mv5000,LGR_H2O_DIFF,TRUE,0,INTEG,lgr_h2o_mult,lgr_h2o_offset)
+    #EndIf
     '== optional Picarro CO2/CH4 acquisition
-    If ( sensor_pic_co2ch4 ) Then
-      VoltDiff(pic_co2,1,mv5000,PIC_CO2_DIFF,TRUE,0,INTEG,PIC_CO2_MULT,PIC_CO2_OFFSET)
-      VoltDiff(pic_ch4,1,mv5000,PIC_CH4_DIFF,TRUE,0,INTEG,PIC_CH4_MULT,PIC_CH4_OFFSET)
-      VoltDiff(pic_h2o,1,mv5000,PIC_H2O_DIFF,TRUE,0,INTEG,PIC_H2O_MULT,PIC_H2O_OFFSET)
-    EndIf
-    CallTable(tsdata_extra)
+    #If (PIC_CH4_ENABLED) Then
+      VoltDiff(pic_co2,1,mv5000,PIC_CO2_DIFF,TRUE,0,INTEG,pic_co2_mult,pic_co2_offset)
+      VoltDiff(pic_ch4,1,mv5000,PIC_CH4_DIFF,TRUE,0,INTEG,pic_ch4_mult,pic_ch4_offset)
+      VoltDiff(pic_h2o,1,mv5000,PIC_H2O_DIFF,TRUE,0,INTEG,pic_h2o_mult,pic_h2o_offset)
+    #EndIf
+    #If (LGR_N2O_ENABLED OR PIC_CH4_ENABLED) Then
+      CallTable(tsdata_extra)
+    #EndIf
 
     If ( scan_count >= OFFSET ) Then  'IF HAVE ENUF SCANS TO DO STATS,
       
@@ -1254,16 +1193,11 @@ BeginProg
         irga_disable_f = TRUE
       EndIf
       If ( NOT irga_disable_f ) Then
-        Td_tmp = LOG (H2O*R*(amb_tmpr+273.15)/(11.0178*(1.00072+3.2e-5*amb_press+5.9e-9*amb_press*amb_tmpr*amb_tmpr))) 
-        'eqns: Td_tmp = ln (H2O*R*(T+273.15)/(Mv*0.61121*f)); Mv = 18 g/mol, f = 1.00072+3.2e-5*P+5.9e-9*P*T*T
-        Td = (240.97*Td_tmp)/(17.502-Td_tmp) 'Buck (1981) Eq. (2a, 3a, & 6) and Leuning (2004) Eq. (6.23)
-        'Compute fast response air temperature from sonic temperature and EC150 vapor density.
         Tc = Ts_absolute/(1+0.32*H2O*R*Ts_absolute/(amb_press*18)) - 273.15'Kaimal and Gaynor (1991) Eq. (3).
         divisor = (amb_press/(R*(Tc+273.15)))-(H2O/18) 'mixing ratio (X/dry air)
         CO2_ppm=CO2/(0.044*divisor)
         Xv=H2O/(0.018*divisor)
       Else
-        Td=NAN
         Tc=NAN
         CO2_ppm=NAN
         Xv=NAN
@@ -1291,7 +1225,7 @@ BeginProg
         irga_uptime = irga_samples/samples_possible
         
         'add azimuth to calculated wind dir
-        rslt_wnd_dir = (360 + rslt_wnd_dir + csat_azimuth) MOD 360
+        rslt_wnd_dir = (360 + rslt_wnd_dir + sonic_azimuth) MOD 360
         tau = SQR ((Ux_Uz_cov*Ux_Uz_cov)+(Uy_Uz_cov*Uy_Uz_cov))
         u_star = SQR (tau)
         Ts_Std = SQR (Ts_Std)
@@ -1337,7 +1271,7 @@ BeginProg
         irga_uptime = irga_samples/samples_possible
         
         'add azimuth to calculated wind dir
-        rslt_wnd_dir = (360 + rslt_wnd_dir + csat_azimuth) MOD 360
+        rslt_wnd_dir = (360 + rslt_wnd_dir + sonic_azimuth) MOD 360
         tau = SQR ((Ux_Uz_cov*Ux_Uz_cov)+(Uy_Uz_cov*Uy_Uz_cov))
         u_star = SQR (tau)
         Ts_Std = SQR (Ts_Std)
@@ -1405,9 +1339,7 @@ BeginProg
   NextScan
 
 
-  '===========================================================================
   '====================== SLOW SCAN INTERVAL =================================
-  '===========================================================================
   SlowSequence
   Scan (SLOW_INTV,Sec,SLOW_BUFFER_SIZE,0)
     PanelTemp (panel_tmpr,INTEG)
@@ -1432,46 +1364,42 @@ BeginProg
     If (PAR_mV < 0) Then (PAR_mV = 0)
     PAR_flxdens = PAR_mV*li190_dens_mult
     PAR_totflx = PAR_mV*li190_tot_mult
-    
-    '== optional Decagon 2nd gen. sensor "NDVI"
-    If (sensor_dec_ndvi) Then
-      SDI12Recorder(dec_ndvi_up(1),SDI_COM_ADDR,DEC_NDVI_UP_SDI_ADDR,"M!",1.0,0)
-	    SDI12Recorder(dec_ndvi_dn(1),SDI_COM_ADDR,DEC_NDVI_DN_SDI_ADDR,"M!",1.0,0)
-    EndIf
-    
-    '== optional Decagon 2nd gen. sensor "PRI"
-    If (sensor_dec_pri) Then
-      SDI12Recorder(dec_pri_up(1),SDI_COM_ADDR,DEC_PRI_UP_SDI_ADDR,"M!",1.0,0)
-	    SDI12Recorder(dec_pri_dn(1),SDI_COM_ADDR,DEC_PRI_DN_SDI_ADDR,"M!",1.0,0)
-    EndIf
-    
-    If (sensor_dec_ndvi OR sensor_dec_pri) Then
-      CallTable(stats5_ui)
-      CallTable(stats30_ui)
-    EndIf
+
+    #If (DEC_SRS_ENABLED) Then
+      SDI12Recorder(decagon(1),SDI_COM_ADDR,DEC_NDVI_UP_SDI_ADDR,"M!",1.0,0)
+	    SDI12Recorder(decagon(4),SDI_COM_ADDR,DEC_NDVI_DN_SDI_ADDR,"M!",1.0,0)
+      SDI12Recorder(decagon(7),SDI_COM_ADDR,DEC_PRI_UP_SDI_ADDR,"M!",1.0,0)
+	    SDI12Recorder(decagon(10),SDI_COM_ADDR,DEC_PRI_DN_SDI_ADDR,"M!",1.0,0)
+	    CallTable(work_srs)
+	    If (work_srs.Output(1,1)) Then
+	      GetRecord(work_srs_out(1),work_srs,1)
+	      alpha_NDVI = incident_650nm / incident_810nm
+	      'reject alpha vlaue if either sensor value exceeds spec'd range
+	      If (incident_650nm < 0 OR incident_650nm > 2 OR incident_810nm < 0 _
+	        OR incident_810nm > 2) Then alpha_NDVI = NAN
+        aRn = reflected_810nm * IIF(alpha_NDVI=NAN, DEF_ALPHA_NDVI, alpha_NDVI)
+        NDVI = (aRn - reflected_650nm)/(aRn + reflected_650nm)
+
+	      alpha_PRI = incident_570nm / incident_531nm
+        If (incident_570nm < 0 OR incident_570nm > 2 OR incident_531nm < 0 _
+          OR incident_531nm > 2) Then alpha_PRI = NAN 
+        aRn = reflected_531nm * IIF(alpha_PRI=NAN, DEF_ALPHA_PRI, alpha_PRI)
+        PRI = (aRn - reflected_570nm)/(aRn + reflected_570nm)
+      EndIf 
+      CallTable(stats5_srs)
+    #EndIf
     
     If (save_changes) Then
       save_changes = False 'reset b4 we forget
       save_current_choices()
-      If (NOT sensor_lgr_n2oco) Then Move(lgrn2oco(1),3,NAN,1)
-      If (NOT sensor_pic_co2ch4) Then Move(picco2ch4(1),3,NAN,1)
-      If (NOT sensor_dec_ndvi) Then
-        Move(dec_ndvi_up(1),2,NAN,1)
-        Move(dec_ndvi_dn(1),2,NAN,1)
-      EndIf
-      If (NOT sensor_dec_pri) Then
-        Move(dec_pri_up(1),2,NAN,1)
-        Move(dec_pri_dn(1),2,NAN,1)
-      EndIf
+      CallTable(site_info)
       CallTable(extra_info)
     EndIf
     
     just_had_1hz_scan = TRUE
   NextScan
 
-  '===========================================================================
   '====================== SOIL SCAN INTERVAL =================================
-  '===========================================================================
   SlowSequence
   Scan (SOIL_INTV,Sec,SOIL_BUFFER_SIZE,0)
 
@@ -1480,47 +1408,53 @@ BeginProg
     CallTable(site_daily)
 
     '== Decagon soil moisture probes
-    SDI12Recorder(soil_5TM_ID5_E,SDI_COM_ADDR,DEC_5TM_ID5_SDI_ADDR,"M!",1.0,0)
-    If (soil_5TM_ID5_E = NAN) Then 
-      soil_5TM_ID5_T = NAN
-      soil_5TM_ID5_VWC = NAN
-    Else
-      soil_5TM_ID5_VWC = Topp_equation(soil_5TM_ID5_E)
+    If (soil_5_enabled) Then
+      SDI12Recorder(soil_5TM_ID5_E,SDI_COM_ADDR,DEC_5TM_ID5_SDI_ADDR,"M!",1.0,0)
+      If (soil_5TM_ID5_E = NAN) Then 
+        soil_5TM_ID5_T = NAN
+        soil_5TM_ID5_VWC = NAN
+      Else
+        soil_5TM_ID5_VWC = Topp_equation(soil_5TM_ID5_E)
+      EndIf
+    EndIf
+    If (soil_6_enabled) Then
+      SDI12Recorder(soil_5TM_ID6_E,SDI_COM_ADDR,DEC_5TM_ID6_SDI_ADDR,"M!",1.0,0)
+      If (soil_5TM_ID6_E = NAN) Then 
+        soil_5TM_ID6_T = NAN
+        soil_5TM_ID6_VWC = NAN
+      Else
+        soil_5TM_ID6_VWC = Topp_equation(soil_5TM_ID6_E)
+      EndIf
+    EndIf
+    If (soil_7_enabled) Then
+      SDI12Recorder(soil_5TM_ID7_E,SDI_COM_ADDR,DEC_5TM_ID7_SDI_ADDR,"M!",1.0,0)
+      If (soil_5TM_ID7_E = NAN) Then 
+        soil_5TM_ID7_T = NAN
+        soil_5TM_ID7_VWC = NAN
+      Else
+        soil_5TM_ID7_VWC = Topp_equation(soil_5TM_ID7_E)
+      EndIf
+    EndIf
+    If (soil_8_enabled) Then
+      SDI12Recorder(soil_5TM_ID8_E,SDI_COM_ADDR,DEC_5TM_ID8_SDI_ADDR,"M!",1.0,0)
+      If (soil_5TM_ID8_E = NAN) Then 
+        soil_5TM_ID8_T = NAN
+        soil_5TM_ID8_VWC = NAN
+      Else
+        soil_5TM_ID8_VWC = Topp_equation(soil_5TM_ID8_E)
+      EndIf
+    EndIf
+    If (soil_9_enabled) Then
+      SDI12Recorder(soil_5TM_ID9_E,SDI_COM_ADDR,DEC_5TM_ID9_SDI_ADDR,"M!",1.0,0)
+      If (soil_5TM_ID9_E = NAN) Then 
+        soil_5TM_ID9_T = NAN
+        soil_5TM_ID9_VWC = NAN
+      Else
+        soil_5TM_ID9_VWC = Topp_equation(soil_5TM_ID9_E)
+      EndIf
     EndIf
 
-    SDI12Recorder(soil_5TM_ID6_E,SDI_COM_ADDR,DEC_5TM_ID6_SDI_ADDR,"M!",1.0,0)
-    If (soil_5TM_ID6_E = NAN) Then 
-      soil_5TM_ID6_T = NAN
-      soil_5TM_ID6_VWC = NAN
-    Else
-      soil_5TM_ID6_VWC = Topp_equation(soil_5TM_ID6_E)
-    EndIf
-
-    SDI12Recorder(soil_5TM_ID7_E,SDI_COM_ADDR,DEC_5TM_ID7_SDI_ADDR,"M!",1.0,0)
-    If (soil_5TM_ID7_E = NAN) Then 
-      soil_5TM_ID7_T = NAN
-      soil_5TM_ID7_VWC = NAN
-    Else
-      soil_5TM_ID7_VWC = Topp_equation(soil_5TM_ID7_E)
-    EndIf
-
-    SDI12Recorder(soil_5TM_ID8_E,SDI_COM_ADDR,DEC_5TM_ID8_SDI_ADDR,"M!",1.0,0)
-    If (soil_5TM_ID8_E = NAN) Then 
-      soil_5TM_ID8_T = NAN
-      soil_5TM_ID8_VWC = NAN
-    Else
-      soil_5TM_ID8_VWC = Topp_equation(soil_5TM_ID8_E)
-    EndIf
-
-    SDI12Recorder(soil_5TM_ID9_E,SDI_COM_ADDR,DEC_5TM_ID9_SDI_ADDR,"M!",1.0,0)
-    If (soil_5TM_ID9_E = NAN) Then 
-      soil_5TM_ID9_T = NAN
-      soil_5TM_ID9_VWC = NAN
-    Else
-      soil_5TM_ID9_VWC = Topp_equation(soil_5TM_ID9_E)
-    EndIf
-
-    If (sensor_shfp) Then
+    #If (SHFP_ENABLED) Then
       VoltDiff(hfp1_mVs,1,mv200,HFP_1_SGNL_DIFF,TRUE,0,INTEG,1,0)    'millivolts
       VoltDiff(hfp2_mVs,1,mv200,HFP_2_SGNL_DIFF,TRUE,0,INTEG,1,0)
       VoltSe(hfp1_Vh,1,mv5000,HFP_1_HEAT_SE,TRUE,0,INTEG,(1/1000),0)
@@ -1553,20 +1487,20 @@ BeginProg
       
       If TimeIntoInterval(HFP_CAL_T_HEATOFF,HFP_CAL_INTERVAL,sec) Then
         hfp_sw12_isOn  = FALSE
-        soil_hfp1_sensitivity = (hfp1_Vh_th*hfp1_Vh_th*HFP_1_SELFCAL_MULT) / ABS(hfp1_mVs_t0 - hfp1_mVs_th) 
-        If ( ABS((soil_hfp1_sensitivity / (1000/HFP_1_SENS)) - 1) >= 0.25 ) Then
-          soil_hfp1_sensitivity = 1000/HFP_1_SENS
+        soil_hfp1_sensitivity = (hfp1_Vh_th*hfp1_Vh_th*hfp1_selfcal_mult) / ABS(hfp1_mVs_t0 - hfp1_mVs_th) 
+        If ( ABS((soil_hfp1_sensitivity / (1000/hfp1_sens)) - 1) >= 0.25 ) Then
+          soil_hfp1_sensitivity = 1000/hfp1_sens
         EndIf
-        soil_hfp2_sensitivity = (hfp2_Vh_th*hfp2_Vh_th*HFP_2_SELFCAL_MULT) / ABS(hfp2_mVs_t0 - hfp2_mVs_th)
-        If ( ABS((soil_hfp2_sensitivity / (1000/HFP_2_SENS)) - 1) >= 0.25 ) Then
-          soil_hfp2_sensitivity = 1000/HFP_2_SENS
+        soil_hfp2_sensitivity = (hfp2_Vh_th*hfp2_Vh_th*hfp2_selfcal_mult) / ABS(hfp2_mVs_t0 - hfp2_mVs_th)
+        If ( ABS((soil_hfp2_sensitivity / (1000/hfp2_sens)) - 1) >= 0.25 ) Then
+          soil_hfp2_sensitivity = 1000/hfp2_sens
         EndIf
       EndIf
 
       If TimeIntoInterval(HFP_CAL_T_FINISH,HFP_CAL_INTERVAL,sec) Then
         hfp_isCalibrating = FALSE
       EndIf
-    EndIf
+    #EndIf
     
     just_had_soil_scan = TRUE
   NextScan

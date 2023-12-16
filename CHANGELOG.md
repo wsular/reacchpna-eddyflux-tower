@@ -1,6 +1,75 @@
 Change Log for GHG Monitoring Tower Program
 ===========================================
 
+Next version
+------------
+
+> <div style="border: 1px solid red; padding: 4px">**Incompatible settings file**  
+> After deployment, program settings must be **completely reset** before
+> reprogramming with site-specific values.</div>
+
+### Known Issues
+
+* *Required actions after deployment*
+    * Reset program settings (or delete settings file from CPU drive) and
+      re-program with correct site-specific values
+
+### Data Table Changes
+
+* Remove data table: 'stats30_ui'
+* Rename data table: 'stats5_ui' to 'stats5_srs'
+* Changes to 'stats_srs'
+    * Add columns 'NDVI', 'PRI', 'alpha_NDVI', and 'alpha_PRI'
+    * Rename 'dec_ndvi_up1' to 'incident_650nm'
+    * Rename 'dec_ndvi_up2' to 'incident_810nm'
+    * Add column 'NDVI_up_tilt'
+    * Rename 'dec_ndvi_dn1' to 'reflected_650nm'
+    * Rename 'dec_ndvi_dn2' to 'reflected_810nm'
+    * Add column 'NDVI_dn_tilt'
+    * Rename 'dec_pri_up1' to 'incident_531nm'
+    * Rename 'dec_pri_up2' to 'incident_570nm'
+    * Add column 'PRI_up_tilt'
+    * Rename 'dec_pri_dn1' to 'reflected_531nm'
+    * Rename 'dec_pri_dn2' to 'reflected_570nm'
+    * Add column 'PRI_dn_tilt'
+    * Remove column 'tblcalls_Tot'
+* Changes to 'extra_info'
+    * Remove column 'Decagon_PRI_installed' (dup of 'Decagon_NDVI_installed')
+    * Rename column 'Decagon_NDVI_installed' to 'Decagon_SRS_installed'
+
+### Enhancements
+
+* Transition back to conditional compilation for auxiliary sensors:
+  Decagon NDVI/PRI radiometers, Los Gatos N2O/CO, Picarro CO2/CH4, Huskeflux
+  soil heat flux plate
+    * No longer produces empty tables if sensors are not used (solves problem
+      with CardConvert halting for user interaction when empty tables are
+      encountered, improving automation scripts)
+    * Increase available recording time by not allocating space for sensors
+      which are not used
+* Also use conditional compilation to enable/disable soil moisture probes;
+  data tables are unchanged but if probes are disabled, only NANs are recorded
+  instead of potentially misleading data
+* Re-implement the Decagon NDVI/PRI sensor group under production name, 
+  Spectral Reflectance Sensors (SRS), and expand implicit metadata
+    * Rename columns following channel characteristics
+    * Add missing columns corresponding to 'tilt' reading
+    * Revise/add units
+    * Derive NDVI and PRI from measurements
+    * Fall back to parameter-based values if incident sensor provides bad value
+    * Intentionally do not exclude sensor-reported values outside nominal range
+      in 5-min means but do omit null values
+    * But do omit out-of-bounds 5-min means when evaluating NDVI/PRI
+
+### Other Changes
+
+* New datalogger menu structure
+    * previous top-level menu items are now under 'System Menu' submenu
+    * previous 'Sensor Setup' submenu is now 'Settings' submenu
+    * new submenu 'Initial Setup' contains options to enable/disable auxiliary
+      sensors (described under *Enhancements* above)
+
+
 20140616_MMTN
 -------------
 
