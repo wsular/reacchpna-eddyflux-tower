@@ -1,12 +1,13 @@
-Change Log for GHG Monitoring Tower Program
-===========================================
+# Changelog
 
-Next version
-------------
+Unreleased
+----------
 
-> <div style="border: 1px solid red; padding: 4px">**Incompatible settings file**  
-> After deployment, program settings must be **completely reset** before
-> reprogramming with site-specific values.</div>
+> <div style="border: 1px solid red; padding: 4px">**Warning: settings file structure changed**
+>
+> Due to changes in the structure of the file used to store settings on the logger
+> CPU, it is essential that users upgrading from older program versions do a 
+> **complete reset to default values** before programming site-specific values.</div>
 
 ### Known Issues
 

@@ -1,7 +1,10 @@
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+'Copyright (c) 2011-2015, 2017 Washington State University. Shared with permission.
+'Copyright (c) 2002, 2006, 2010 Campbell Scientific, Inc. All rights reserved.
+'
 ' REgional Approaches to Climate CHange (2011-2016)    reacchpna.org
 ' Laboratory for Atmospheric Research at Washington State University
-' https://bitbucket.org/wsular/2011-reacch-tower-logger
+' https://github.com/wsular/reacchpna-eddyflux-tower
 '
 '==========================  SEMI-EDITABLE VALUES  ======================================
 '----- TIMEZONE -----
